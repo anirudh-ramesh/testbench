@@ -2,15 +2,47 @@ import cv2 as cv
 import numpy as np
 import argparse
 
+bins = np.arange(256).reshape(256,1)
+
 messageStrings = {
 	1: ('Invalid'),
 	2: ('Conflict'),
+}
+
+components = {
+	0: ('Blue'),
+	1: ('Green'),
+	2: ('Red'),
+	3: ('Grey'),
 }
 
 def throwError(messageIndex, reason):
 
 	print 'Argument ' + messageStrings[messageIndex] + ': ' + reason
 	exit()
+
+def padZero(frame, count, intensity):
+
+	return cv.copyMakeBorder(frame, count, count, count, count, cv.BORDER_CONSTANT, value=[intensity, intensity, intensity])
+
+def saveHistogram(frame3, frame1):
+
+	histogramImage = np.ones((300, 256, 3)) * 255
+
+	for x in range(0, 4):
+
+		if x == 3:
+			histogram1Array = cv.calcHist([frame1], [0], None, [256], [0,256])
+		else:
+			histogram1Array = cv.calcHist([frame3[x]], [0], None, [256], [0,256])
+
+		cv.normalize(histogram1Array, histogram1Array, 0, 255, cv.NORM_MINMAX)
+		histogram1Array = np.int32(np.around(histogram1Array))
+		cv.polylines(histogramImage, [np.int32(np.column_stack((bins, histogram1Array)))], False, (255 * (x == 0), 255 * (x == 1), 255 * (x == 2)))
+
+		print components[x] + ' ' + str(histogram1Array.argmax())
+
+	return padZero(np.flipud(histogramImage), 10, 255)
 
 def doSegment(method, frame, override, threshold, sigma):
 
@@ -41,6 +73,7 @@ if __name__ == '__main__':
 	parser.add_argument('frameIn', help='<frameIn>')
 	parser.add_argument('frameOut', help='<frameOut>')
 	parser.add_argument('method', help='<method>')
+	parser.add_argument('-dump', help='<dump>')
 	parser.add_argument('-sigma', help='<sigma>')
 	parser.add_argument('-threshold', help='<threshold>')
 
@@ -65,6 +98,7 @@ if __name__ == '__main__':
 		throwError(2, args.method + ' cannot have a sigma')
 
 	else:
+
 		sigma = 0.33
 
 	if (args.threshold != None) & (args.method == 'Canny'):
@@ -108,6 +142,10 @@ if __name__ == '__main__':
 			threshold = None
 			override = False
 
+	elif args.threshold:
+
+		throwError(2, args.method + ' cannot have a threshold')
+
 	else:
 
 		threshold = None
@@ -117,7 +155,40 @@ if __name__ == '__main__':
 	frame_Channels = cv.split(frame)
 	frame_Greyscale = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
-	cv.imwrite(args.frameOut + args.method + '0.png', doSegment(args.method, frame_Channels[0], override, threshold, sigma))
-	cv.imwrite(args.frameOut + args.method + '1.png', doSegment(args.method, frame_Channels[1], override, threshold, sigma))
-	cv.imwrite(args.frameOut + args.method + '2.png', doSegment(args.method, frame_Channels[2], override, threshold, sigma))
-	cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
+	if args.dump:
+
+		if args.dump == 'BGR':
+
+			for x in range(0, 3):
+
+				cv.imwrite(args.frameOut + '_BGR_Dump' + str(x) + '.png', frame_Channels[x])
+
+		if args.dump == 'Grey':
+
+			cv.imwrite(args.frameOut + '_Grey_Dump' + 'X.png', frame_Greyscale)
+
+		if args.dump == 'YVU':
+
+			frame_Components = cv.split(cv.cvtColor(frame, cv.COLOR_BGR2YCrCb))
+
+			for x in range(0, 3):
+
+				cv.imwrite(args.frameOut + '_YVU_Dump' + str(x) + '.png', frame_Components[x])
+
+	if args.method == 'None':
+
+		exit()
+
+	elif args.method == 'Histogram':
+
+		cv.imwrite(args.frameOut + 'Histogram.png', saveHistogram(frame_Channels, frame_Greyscale))
+
+		exit()
+
+	else:
+
+		for x in range(0, 3):
+
+			cv.imwrite(args.frameOut + args.method + str(x) + '.png', doSegment(args.method, frame_Channels[x], override, threshold, sigma))
+
+		cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
