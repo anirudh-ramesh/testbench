@@ -1,12 +1,15 @@
 import cv2 as cv
 import numpy as np
 import argparse
+import math
+import scipy.ndimage
 
 bins = np.arange(256).reshape(256,1)
 
 messageStrings = {
 	1: ('Invalid'),
 	2: ('Conflict'),
+	3: ('Incomplete'),
 }
 
 components = {
@@ -66,6 +69,54 @@ def doSegment(method, frame, override, threshold, sigma):
 
 		return np.zeros((10, 10, 1), np.uint8)
 
+def doAffine(frame, method, scale, angle):
+
+	height, width, matrices = frame.shape
+
+	if method == 'Rotate':
+
+		sineFactor = math.sin(angle * np.pi / 180)
+		cosineFactor = math.cos(angle * np.pi / 180)
+
+		heightTarget = int(width * sineFactor + height * cosineFactor)
+		widthTarget = int(width * cosineFactor + height * sineFactor)
+
+		warpMatrix = np.float32([[1, 0, (widthTarget - width) / 2], [0, 1, (heightTarget - height) / 2]])
+		rotateMatrix = cv.getRotationMatrix2D((widthTarget / 2, heightTarget / 2), angle, 1)
+
+		return cv.warpAffine(cv.warpAffine(frame, warpMatrix, tuple([heightTarget, widthTarget])), rotateMatrix, tuple([heightTarget, widthTarget]))
+
+	elif method == 'Shear':
+
+		factor = math.sin(angle * np.pi / 180)
+
+		sourceTriangle = np.array([(0, 0), (width - 1, 0), (0, height - 1)], np.float32)
+		destinationTriangle = np.array([(0, 0), (width - 1, 0), (width * factor, height - 1)], np.float32)
+
+		warpMatrix = cv.getAffineTransform(sourceTriangle, destinationTriangle)
+
+		return cv.warpAffine(frame, warpMatrix, (int(width * factor) + width, height))
+
+	elif method == 'Stretch':
+
+		pass
+
+	else:
+
+		return np.zeros((10, 10, 1), np.uint8)
+
+def swapChannels(frame_Channels, index0, index1):
+	c = frame_Channels[index0]
+	frame_Channels[index0] = frame_Channels[index1]
+	frame_Channels[index1] = c
+	return cv.merge(frame_Channels)
+
+def upscale(frame_Channels, scale):
+	frame_Channels[0] = scipy.ndimage.zoom(frame_Channels[0], scale, order=3)
+	frame_Channels[1] = scipy.ndimage.zoom(frame_Channels[1], scale, order=3)
+	frame_Channels[2] = scipy.ndimage.zoom(frame_Channels[2], scale, order=3)
+	return cv.merge(frame_Channels)
+
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='')
@@ -73,11 +124,121 @@ if __name__ == '__main__':
 	parser.add_argument('frameIn', help='<frameIn>')
 	parser.add_argument('frameOut', help='<frameOut>')
 	parser.add_argument('method', help='<method>')
+	parser.add_argument('-angle', help='<angle>')
+	parser.add_argument('-direction', help='<direction>')
 	parser.add_argument('-dump', help='<dump>')
+	parser.add_argument('-operand', help='<operand>')
+	parser.add_argument('-scale', help='<scale>')
 	parser.add_argument('-sigma', help='<sigma>')
 	parser.add_argument('-threshold', help='<threshold>')
 
 	args = parser.parse_args()
+
+# Argument Handling: Angle
+
+	if (args.angle != None) & (args.method in ['Rotate', 'Shear']):
+
+		try:
+
+			angle = float(args.angle)
+
+			if angle < 0:
+
+				throwError(1, 'Negative angles are not supported')
+
+			if angle > 180:
+
+				throwError(1, 'Value out of bounds')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif (args.angle != None):
+
+		throwError(2, args.method + ' cannot have an angle')
+
+	else:
+
+		angle = 2
+
+# Argument Handling: Direction
+
+	if (args.direction != None) & (args.method == 'Flip'):
+
+		try:
+
+			direction = int(args.direction)
+
+			if direction not in [-1, 0, 1]:
+
+				throwError(1, 'Value out of bounds')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	if (args.direction != None) & (args.method == 'Stitch'):
+
+		try:
+
+			direction = args.direction
+
+			if direction not in ['H', 'V']:
+
+				throwError(1, 'Value out of bounds')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif args.direction:
+
+		throwError(2, args.method + ' cannot have a direction')
+
+	elif (args.direction == None) & (args.method == 'Stitch'):
+
+		throwError(3, args.method + ' requires a direction')
+
+	else:
+
+		direction = -1
+
+# Argument Handling: Operand
+
+	if (args.operand == None) & (args.method == 'Stitch'):
+
+		throwError(3, args.method + ' requires another operand')
+
+	if (args.operand != None) & (args.method != 'Stitch'):
+
+		throwError(2, args.method + ' cannot have another operand')
+
+# Argument Handling: Scale
+
+	if (args.scale != None) & (args.method in ['Stretch', 'Enlarge']):
+
+		try:
+
+			scale = float(args.scale)
+
+			if (scale <= 1):
+
+				throwError(1, 'Value out of bounds')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif args.scale:
+
+		throwError(2, args.method + ' cannot have a scale factor')
+
+	else:
+
+		scale = 2.0
+
+# Argument Handling: Sigma
 
 	if (args.sigma != None) & (args.method == 'Canny'):
 
@@ -100,6 +261,8 @@ if __name__ == '__main__':
 	else:
 
 		sigma = 0.33
+
+# Argument Handling: Threshold
 
 	if (args.threshold != None) & (args.method == 'Canny'):
 
@@ -151,7 +314,14 @@ if __name__ == '__main__':
 		threshold = None
 		override = False
 
+# I/O Transactions
+
 	frame = cv.imread(args.frameIn)
+
+	if frame is None:
+
+		throwError(1, 'Unable to find / open ' + args.frameIn)
+
 	frame_Channels = cv.split(frame)
 	frame_Greyscale = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
@@ -175,15 +345,73 @@ if __name__ == '__main__':
 
 				cv.imwrite(args.frameOut + '_YVU_Dump' + str(x) + '.png', frame_Components[x])
 
+		if args.dump == 'HSV':
+
+			frame_Components = cv.split(cv.cvtColor(frame, cv.COLOR_BGR2HSV))
+
+			for x in range(0, 3):
+
+				cv.imwrite(args.frameOut + '_HSV_Dump' + str(x) + '.png', frame_Components[x])
+
 	if args.method == 'None':
 
-		exit()
+		pass
 
 	elif args.method == 'Histogram':
 
-		cv.imwrite(args.frameOut + 'Histogram.png', saveHistogram(frame_Channels, frame_Greyscale))
+		cv.imwrite(args.frameOut + args.method + '.png', saveHistogram(frame_Channels, frame_Greyscale))
 
-		exit()
+	elif args.method == 'Enlarge':
+
+		cv.imwrite(args.frameOut + args.method + '.png', upscale(frame_Channels, scale))
+
+	elif args.method == 'Negate':
+
+		cv.imwrite(args.frameOut + args.method + '.png', cv.bitwise_not(frame))
+
+	elif args.method == 'Flip':
+
+		cv.imwrite(args.frameOut + args.method + str(direction + 1) + '.png', cv.flip(frame, direction))
+
+	elif args.method == 'ChannelSwap':
+
+		for x in range(0, 3):
+
+			cv.imwrite(args.frameOut + args.method + str(x) + '.png', swapChannels(frame_Channels, x, (x + 1) % 3))
+
+	elif args.method == 'Stitch':
+
+		frame_Stitch = cv.imread(args.operand)
+
+		if frame_Stitch is None:
+
+			throwError(1, 'Unable to find / open ' + args.operand)
+
+		if direction is 'H':
+
+			try:
+
+				frameOut = np.hstack((frame, frame_Stitch))
+
+			except ValueError:
+
+				throwError(1, 'Inappropriate frame dimension')
+
+		elif direction is 'V':
+
+			try:
+
+				frameOut = np.vstack((frame, frame_Stitch))
+
+			except ValueError:
+
+				throwError(1, 'Inappropriate frame dimension')
+
+		cv.imwrite(args.frameOut + args.method + direction + '.png', frameOut)
+
+	elif args.method in ['Rotate', 'Shear', 'Stretch']:
+
+		cv.imwrite(args.frameOut + args.method + '.png', doAffine(frame, args.method, scale, angle))
 
 	else:
 
@@ -192,3 +420,13 @@ if __name__ == '__main__':
 			cv.imwrite(args.frameOut + args.method + str(x) + '.png', doSegment(args.method, frame_Channels[x], override, threshold, sigma))
 
 		cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
+
+# Add Blend
+# Add Stretch
+
+# Add False-Color (Built-in)
+# Add False-Color (Custom)
+# Add Skeletonize
+# Add Timestamp
+
+# Add Function-Search
