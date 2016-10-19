@@ -19,6 +19,21 @@ components = {
 	3: ('Grey'),
 }
 
+palettes = {
+	'Autumn': 0,
+	'Bone': 1,
+	'Jet': 2,
+	'Winter': 3,
+	'Rainbow': 4,
+	'Ocean': 5,
+	'Summer': 6,
+	'Spring': 7,
+	'Cool': 8,
+	'HSV': 9,
+	'Pink': 10,
+	'Hot': 11,
+}
+
 def throwError(messageIndex, reason):
 
 	print 'Argument ' + messageStrings[messageIndex] + ': ' + reason
@@ -203,6 +218,16 @@ def processFrame(args):
 	if (args.operand != None) & (args.method != 'Stitch'):
 
 		throwError(2, args.method + ' cannot have another operand')
+
+# Argument Handling: Palette
+
+	if (args.palette == None) & (args.method == 'Palette'):
+
+		throwError(3, args.method + ' requires a choice of palette')
+
+	elif (args.palette != None) & (args.method != 'Palette'):
+
+		throwError(2, args.method + ' cannot have a choice of palette')
 
 # Argument Handling: Scale
 
@@ -437,6 +462,10 @@ def processFrame(args):
 
 		cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
 
+	elif args.method == 'Palette':
+
+		cv.imwrite(args.frameOut + args.method + args.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[args.palette]))
+
 	else:
 
 		throwError(1, 'Unknown method')
@@ -452,6 +481,7 @@ if __name__ == '__main__':
 	parser.add_argument('-direction', help='<direction>')
 	parser.add_argument('-dump', help='<dump>')
 	parser.add_argument('-operand', help='<operand>')
+	parser.add_argument('-palette', help='<palette>')
 	parser.add_argument('-scale', help='<scale>')
 	parser.add_argument('-sigma', help='<sigma>')
 	parser.add_argument('-threshold', help='<threshold>')
@@ -462,7 +492,6 @@ if __name__ == '__main__':
 
 # Add Blend
 
-# Add False-Color (Built-in)
 # Add False-Color (Custom)
 # Add Skeletonize
 # Add Timestamp
