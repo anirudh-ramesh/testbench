@@ -225,17 +225,7 @@ def processFrame(args):
 
 # Argument Handling: Palette
 
-	if (args.palette == '?'):
-
-		print 'List of available palettes:'
-
-		for name, number in palettes.items():
-
-			print name
-
-		exit()
-
-	elif (args.palette == None) & (args.method == 'Palette'):
+	if (args.palette == None) & (args.method == 'Palette'):
 
 		throwError(3, args.method + ' requires a choice of palette')
 
@@ -478,7 +468,21 @@ def processFrame(args):
 
 	elif args.method == 'Palette':
 
-		cv.imwrite(args.frameOut + args.method + args.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[args.palette]))
+		if (args.palette == '?'):
+
+			for name, number in palettes.items():
+
+				print name
+
+		elif (args.palette == '*'):
+
+			for name, number in palettes.items():
+
+				cv.imwrite(args.frameOut + args.method + name + '.png', cv.applyColorMap(frame_Greyscale, number))
+
+		else:
+
+			cv.imwrite(args.frameOut + args.method + args.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[args.palette]))
 
 	else:
 
