@@ -50,9 +50,9 @@ def saveHistogram(frame3, frame1):
 	for x in range(0, 4):
 
 		if x == 3:
-			histogram1Array = cv.calcHist([frame1], [0], None, [256], [0,256])
+			histogram1Array = cv.calcHist([frame1], [0], None, [256], [0, 256])
 		else:
-			histogram1Array = cv.calcHist([frame3[x]], [0], None, [256], [0,256])
+			histogram1Array = cv.calcHist([frame3[x]], [0], None, [256], [0, 256])
 
 		cv.normalize(histogram1Array, histogram1Array, 0, 255, cv.NORM_MINMAX)
 		histogram1Array = np.int32(np.around(histogram1Array))
@@ -126,15 +126,19 @@ def doAffine(frame, method, scale, angle):
 		return np.zeros((10, 10, 1), np.uint8)
 
 def swapChannels(frame_Channels, index0, index1):
+
 	c = frame_Channels[index0]
 	frame_Channels[index0] = frame_Channels[index1]
 	frame_Channels[index1] = c
+
 	return cv.merge(frame_Channels)
 
 def enlarge(frame_Channels, scale):
-	frame_Channels[0] = scipy.ndimage.zoom(frame_Channels[0], scale, order=3)
-	frame_Channels[1] = scipy.ndimage.zoom(frame_Channels[1], scale, order=3)
-	frame_Channels[2] = scipy.ndimage.zoom(frame_Channels[2], scale, order=3)
+
+	for x in range(0, 3):
+
+		frame_Channels[x] = scipy.ndimage.zoom(frame_Channels[x], scale, order=3)
+
 	return cv.merge(frame_Channels)
 
 def processFrame(args):
