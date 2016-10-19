@@ -99,7 +99,12 @@ def doAffine(frame, method, scale, angle):
 
 	elif method == 'Stretch':
 
-		pass
+		sourceTriangle = np.array([(0, 0), (width - 1, 0), (0, height - 1)], np.float32)
+		destinationTriangle = np.array([(0, 0), (int(width * scale[0]) + width - 1, 0), (0, int(height * scale[1]) + height - 1)], np.float32)
+
+		warpMatrix = cv.getAffineTransform(sourceTriangle, destinationTriangle)
+
+		return cv.warpAffine(frame, warpMatrix, (int(width * scale[0]) + width, int(height * scale[1]) + height))
 
 	else:
 
@@ -111,28 +116,13 @@ def swapChannels(frame_Channels, index0, index1):
 	frame_Channels[index1] = c
 	return cv.merge(frame_Channels)
 
-def upscale(frame_Channels, scale):
+def enlarge(frame_Channels, scale):
 	frame_Channels[0] = scipy.ndimage.zoom(frame_Channels[0], scale, order=3)
 	frame_Channels[1] = scipy.ndimage.zoom(frame_Channels[1], scale, order=3)
 	frame_Channels[2] = scipy.ndimage.zoom(frame_Channels[2], scale, order=3)
 	return cv.merge(frame_Channels)
 
-if __name__ == '__main__':
-
-	parser = argparse.ArgumentParser(description='')
-
-	parser.add_argument('frameIn', help='<frameIn>')
-	parser.add_argument('frameOut', help='<frameOut>')
-	parser.add_argument('method', help='<method>')
-	parser.add_argument('-angle', help='<angle>')
-	parser.add_argument('-direction', help='<direction>')
-	parser.add_argument('-dump', help='<dump>')
-	parser.add_argument('-operand', help='<operand>')
-	parser.add_argument('-scale', help='<scale>')
-	parser.add_argument('-sigma', help='<sigma>')
-	parser.add_argument('-threshold', help='<threshold>')
-
-	args = parser.parse_args()
+def processFrame(args):
 
 # Argument Handling: Angle
 
@@ -148,7 +138,7 @@ if __name__ == '__main__':
 
 			if angle > 180:
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		except ValueError:
 
@@ -172,7 +162,7 @@ if __name__ == '__main__':
 
 			if direction not in [-1, 0, 1]:
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		except ValueError:
 
@@ -186,7 +176,7 @@ if __name__ == '__main__':
 
 			if direction not in ['H', 'V']:
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		except ValueError:
 
@@ -216,7 +206,7 @@ if __name__ == '__main__':
 
 # Argument Handling: Scale
 
-	if (args.scale != None) & (args.method in ['Stretch', 'Enlarge']):
+	if (args.scale != None) & (args.method == 'Enlarge'):
 
 		try:
 
@@ -224,11 +214,37 @@ if __name__ == '__main__':
 
 			if (scale <= 1):
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		except ValueError:
 
 			throwError(1, 'Unable to parse')
+
+	elif (args.scale != None) & (args.method == 'Stretch'):
+
+		try:
+
+			scale = [float(i) for i in args.scale.split('x')]
+
+			if (len(scale) != 2):
+
+				throwError(1, 'Unable to parse')
+
+			if (scale[0] <= 0.0) | (scale[1] <= 0.0):
+
+				throwError(1, 'Value out of domain')
+
+			if (scale[0] == 1.0) | (scale[1] == 1.0):
+
+				throwError(1, 'Value out of domain')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif (args.scale == None) & (args.method in ['Stretch']):
+
+		scale = [0.2, 0.2]
 
 	elif args.scale:
 
@@ -248,7 +264,7 @@ if __name__ == '__main__':
 
 			if (sigma > 1) | (sigma < 0):
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		except ValueError:
 
@@ -282,7 +298,7 @@ if __name__ == '__main__':
 
 			if (threshold[x] > 255) | (threshold[x] < 0):
 
-				throwError(1, 'Value out of bounds')
+				throwError(1, 'Value out of domain')
 
 		override = True
 
@@ -363,7 +379,7 @@ if __name__ == '__main__':
 
 	elif args.method == 'Enlarge':
 
-		cv.imwrite(args.frameOut + args.method + '.png', upscale(frame_Channels, scale))
+		cv.imwrite(args.frameOut + args.method + '.png', enlarge(frame_Channels, scale))
 
 	elif args.method == 'Negate':
 
@@ -413,7 +429,7 @@ if __name__ == '__main__':
 
 		cv.imwrite(args.frameOut + args.method + '.png', doAffine(frame, args.method, scale, angle))
 
-	else:
+	elif args.method in ['Binarize', 'Canny']:
 
 		for x in range(0, 3):
 
@@ -421,8 +437,30 @@ if __name__ == '__main__':
 
 		cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
 
+	else:
+
+		throwError(1, 'Unknown method')
+
+if __name__ == '__main__':
+
+	parser = argparse.ArgumentParser(description='')
+
+	parser.add_argument('frameIn', help='<frameIn>')
+	parser.add_argument('frameOut', help='<frameOut>')
+	parser.add_argument('method', help='<method>')
+	parser.add_argument('-angle', help='<angle>')
+	parser.add_argument('-direction', help='<direction>')
+	parser.add_argument('-dump', help='<dump>')
+	parser.add_argument('-operand', help='<operand>')
+	parser.add_argument('-scale', help='<scale>')
+	parser.add_argument('-sigma', help='<sigma>')
+	parser.add_argument('-threshold', help='<threshold>')
+
+	args = parser.parse_args()
+
+	processFrame(args)
+
 # Add Blend
-# Add Stretch
 
 # Add False-Color (Built-in)
 # Add False-Color (Custom)
