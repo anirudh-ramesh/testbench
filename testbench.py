@@ -225,7 +225,17 @@ def processFrame(args):
 
 # Argument Handling: Palette
 
-	if (args.palette == None) & (args.method == 'Palette'):
+	if (args.palette == '?'):
+
+		print 'List of available palettes:'
+
+		for name, number in palettes.items():
+
+			print name
+
+		exit()
+
+	elif (args.palette == None) & (args.method == 'Palette'):
 
 		throwError(3, args.method + ' requires a choice of palette')
 
