@@ -481,6 +481,27 @@ def processFrame(arguments):
 
 				cv.imwrite(arguments.frameOut + arguments.method + name + '.png', cv.applyColorMap(frame_Greyscale, number))
 
+		elif (len(arguments.palette.split('.plt')) == 2):
+
+			paletteLUT = np.zeros((256, 1, 3), dtype=np.uint8)
+
+			paletteFileHandle = open(arguments.palette, 'r')
+
+			position = 0
+			for entry in paletteFileHandle.readlines():
+				intensitites = entry.strip('\n').split(' ')
+				for channels in range(0, 3):
+					paletteLUT[position, 0, channels] = intensitites[2 - channels]
+				position += 1
+
+			paletteFileHandle.close()
+
+			cv.imwrite(arguments.frameOut + arguments.method + arguments.palette.strip('.plt') + '.png', cv.LUT(frame, paletteLUT))
+
+		elif (arguments.palette not in palettes):
+
+			throwError(1, 'Unknown palette')
+
 		else:
 
 			cv.imwrite(arguments.frameOut + arguments.method + arguments.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[arguments.palette]))
@@ -491,7 +512,6 @@ def processFrame(arguments):
 
 # Add Blend
 
-# Add False-Color (Custom)
 # Add Skeletonize
 # Add Timestamp
 
