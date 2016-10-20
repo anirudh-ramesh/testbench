@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import math
+import re
 import scipy.ndimage
 
 bins = np.arange(256).reshape(256,1)
@@ -119,10 +120,6 @@ def doAffine(frame, method, scale, angle):
 		warpMatrix = cv.getAffineTransform(sourceTriangle, destinationTriangle)
 
 		return cv.warpAffine(frame, warpMatrix, (int(width * scale[0]) + width, int(height * scale[1]) + height))
-
-	else:
-
-		return np.zeros((10, 10, 1), np.uint8)
 
 def swapChannels(frame_Channels, index0, index1):
 
@@ -396,6 +393,11 @@ def processFrame(arguments):
 			for x in range(0, 3):
 
 				cv.imwrite(arguments.frameOut + '_HSV_Dump' + str(x) + '.png', frame_Components[x])
+
+	if arguments.search:
+
+		for (i, functionName) in enumerate(filter(lambda x: re.search(".*{}.*".format(arguments.search), x, re.IGNORECASE), dir(cv))):
+			print("{}. {}".format(i + 1, functionName))
 
 	if arguments.method == 'None':
 
