@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-import argparse
 import math
 import scipy.ndimage
 
@@ -141,15 +140,15 @@ def enlarge(frame_Channels, scale):
 
 	return cv.merge(frame_Channels)
 
-def processFrame(args):
+def processFrame(arguments):
 
 # Argument Handling: Angle
 
-	if (args.angle != None) & (args.method in ['Rotate', 'Shear']):
+	if (arguments.angle != None) & (arguments.method in ['Rotate', 'Shear']):
 
 		try:
 
-			angle = float(args.angle)
+			angle = float(arguments.angle)
 
 			if angle < 0:
 
@@ -163,9 +162,9 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	elif (args.angle != None):
+	elif (arguments.angle != None):
 
-		throwError(2, args.method + ' cannot have an angle')
+		throwError(2, arguments.method + ' cannot have an angle')
 
 	else:
 
@@ -173,11 +172,11 @@ def processFrame(args):
 
 # Argument Handling: Direction
 
-	if (args.direction != None) & (args.method == 'Flip'):
+	if (arguments.direction != None) & (arguments.method == 'Flip'):
 
 		try:
 
-			direction = int(args.direction)
+			direction = int(arguments.direction)
 
 			if direction not in [-1, 0, 1]:
 
@@ -187,11 +186,11 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	if (args.direction != None) & (args.method == 'Stitch'):
+	if (arguments.direction != None) & (arguments.method == 'Stitch'):
 
 		try:
 
-			direction = args.direction
+			direction = arguments.direction
 
 			if direction not in ['H', 'V']:
 
@@ -201,13 +200,13 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	elif args.direction:
+	elif arguments.direction:
 
-		throwError(2, args.method + ' cannot have a direction')
+		throwError(2, arguments.method + ' cannot have a direction')
 
-	elif (args.direction == None) & (args.method == 'Stitch'):
+	elif (arguments.direction == None) & (arguments.method == 'Stitch'):
 
-		throwError(3, args.method + ' requires a direction')
+		throwError(3, arguments.method + ' requires a direction')
 
 	else:
 
@@ -215,31 +214,31 @@ def processFrame(args):
 
 # Argument Handling: Operand
 
-	if (args.operand == None) & (args.method == 'Stitch'):
+	if (arguments.operand == None) & (arguments.method == 'Stitch'):
 
-		throwError(3, args.method + ' requires another operand')
+		throwError(3, arguments.method + ' requires another operand')
 
-	if (args.operand != None) & (args.method != 'Stitch'):
+	if (arguments.operand != None) & (arguments.method != 'Stitch'):
 
-		throwError(2, args.method + ' cannot have another operand')
+		throwError(2, arguments.method + ' cannot have another operand')
 
 # Argument Handling: Palette
 
-	if (args.palette == None) & (args.method == 'Palette'):
+	if (arguments.palette == None) & (arguments.method == 'Palette'):
 
-		throwError(3, args.method + ' requires a choice of palette')
+		throwError(3, arguments.method + ' requires a choice of palette')
 
-	elif (args.palette != None) & (args.method != 'Palette'):
+	elif (arguments.palette != None) & (arguments.method != 'Palette'):
 
-		throwError(2, args.method + ' cannot have a choice of palette')
+		throwError(2, arguments.method + ' cannot have a choice of palette')
 
 # Argument Handling: Scale
 
-	if (args.scale != None) & (args.method == 'Enlarge'):
+	if (arguments.scale != None) & (arguments.method == 'Enlarge'):
 
 		try:
 
-			scale = float(args.scale)
+			scale = float(arguments.scale)
 
 			if (scale <= 1):
 
@@ -249,11 +248,11 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	elif (args.scale != None) & (args.method == 'Stretch'):
+	elif (arguments.scale != None) & (arguments.method == 'Stretch'):
 
 		try:
 
-			scale = [float(i) for i in args.scale.split('x')]
+			scale = [float(i) for i in arguments.scale.split('x')]
 
 			if (len(scale) != 2):
 
@@ -271,13 +270,13 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	elif (args.scale == None) & (args.method in ['Stretch']):
+	elif (arguments.scale == None) & (arguments.method in ['Stretch']):
 
 		scale = [0.2, 0.2]
 
-	elif args.scale:
+	elif arguments.scale:
 
-		throwError(2, args.method + ' cannot have a scale factor')
+		throwError(2, arguments.method + ' cannot have a scale factor')
 
 	else:
 
@@ -285,11 +284,11 @@ def processFrame(args):
 
 # Argument Handling: Sigma
 
-	if (args.sigma != None) & (args.method == 'Canny'):
+	if (arguments.sigma != None) & (arguments.method == 'Canny'):
 
 		try:
 
-			sigma = float(args.sigma)
+			sigma = float(arguments.sigma)
 
 			if (sigma > 1) | (sigma < 0):
 
@@ -299,9 +298,9 @@ def processFrame(args):
 
 			throwError(1, 'Unable to parse')
 
-	elif args.sigma:
+	elif arguments.sigma:
 
-		throwError(2, args.method + ' cannot have a sigma')
+		throwError(2, arguments.method + ' cannot have a sigma')
 
 	else:
 
@@ -309,11 +308,11 @@ def processFrame(args):
 
 # Argument Handling: Threshold
 
-	if (args.threshold != None) & (args.method == 'Canny'):
+	if (arguments.threshold != None) & (arguments.method == 'Canny'):
 
 		try:
 
-			threshold = [int(x) for x in args.threshold.split(',')]
+			threshold = [int(x) for x in arguments.threshold.split(',')]
 
 		except ValueError:
 
@@ -331,11 +330,11 @@ def processFrame(args):
 
 		override = True
 
-	elif (args.threshold != None) & (args.method == 'Binarize'):
+	elif (arguments.threshold != None) & (arguments.method == 'Binarize'):
 
 		try:
 
-			threshold = int(args.threshold)
+			threshold = int(arguments.threshold)
 
 		except ValueError:
 
@@ -350,9 +349,9 @@ def processFrame(args):
 			threshold = None
 			override = False
 
-	elif args.threshold:
+	elif arguments.threshold:
 
-		throwError(2, args.method + ' cannot have a threshold')
+		throwError(2, arguments.method + ' cannot have a threshold')
 
 	else:
 
@@ -361,76 +360,76 @@ def processFrame(args):
 
 # I/O Transactions
 
-	frame = cv.imread(args.frameIn)
+	frame = cv.imread(arguments.frameIn)
 
 	if frame is None:
 
-		throwError(1, 'Unable to find / open ' + args.frameIn)
+		throwError(1, 'Unable to find / open ' + arguments.frameIn)
 
 	frame_Channels = cv.split(frame)
 	frame_Greyscale = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
-	if args.dump:
+	if arguments.dump:
 
-		if args.dump == 'BGR':
+		if arguments.dump == 'BGR':
 
 			for x in range(0, 3):
 
-				cv.imwrite(args.frameOut + '_BGR_Dump' + str(x) + '.png', frame_Channels[x])
+				cv.imwrite(arguments.frameOut + '_BGR_Dump' + str(x) + '.png', frame_Channels[x])
 
-		if args.dump == 'Grey':
+		if arguments.dump == 'Grey':
 
-			cv.imwrite(args.frameOut + '_Grey_Dump' + 'X.png', frame_Greyscale)
+			cv.imwrite(arguments.frameOut + '_Grey_Dump' + 'X.png', frame_Greyscale)
 
-		if args.dump == 'YVU':
+		if arguments.dump == 'YVU':
 
 			frame_Components = cv.split(cv.cvtColor(frame, cv.COLOR_BGR2YCrCb))
 
 			for x in range(0, 3):
 
-				cv.imwrite(args.frameOut + '_YVU_Dump' + str(x) + '.png', frame_Components[x])
+				cv.imwrite(arguments.frameOut + '_YVU_Dump' + str(x) + '.png', frame_Components[x])
 
-		if args.dump == 'HSV':
+		if arguments.dump == 'HSV':
 
 			frame_Components = cv.split(cv.cvtColor(frame, cv.COLOR_BGR2HSV))
 
 			for x in range(0, 3):
 
-				cv.imwrite(args.frameOut + '_HSV_Dump' + str(x) + '.png', frame_Components[x])
+				cv.imwrite(arguments.frameOut + '_HSV_Dump' + str(x) + '.png', frame_Components[x])
 
-	if args.method == 'None':
+	if arguments.method == 'None':
 
 		pass
 
-	elif args.method == 'Histogram':
+	elif arguments.method == 'Histogram':
 
-		cv.imwrite(args.frameOut + args.method + '.png', saveHistogram(frame_Channels, frame_Greyscale))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', saveHistogram(frame_Channels, frame_Greyscale))
 
-	elif args.method == 'Enlarge':
+	elif arguments.method == 'Enlarge':
 
-		cv.imwrite(args.frameOut + args.method + '.png', enlarge(frame_Channels, scale))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', enlarge(frame_Channels, scale))
 
-	elif args.method == 'Negate':
+	elif arguments.method == 'Negate':
 
-		cv.imwrite(args.frameOut + args.method + '.png', cv.bitwise_not(frame))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', cv.bitwise_not(frame))
 
-	elif args.method == 'Flip':
+	elif arguments.method == 'Flip':
 
-		cv.imwrite(args.frameOut + args.method + str(direction + 1) + '.png', cv.flip(frame, direction))
+		cv.imwrite(arguments.frameOut + arguments.method + str(direction + 1) + '.png', cv.flip(frame, direction))
 
-	elif args.method == 'ChannelSwap':
+	elif arguments.method == 'ChannelSwap':
 
 		for x in range(0, 3):
 
-			cv.imwrite(args.frameOut + args.method + str(x) + '.png', swapChannels(frame_Channels, x, (x + 1) % 3))
+			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', swapChannels(frame_Channels, x, (x + 1) % 3))
 
-	elif args.method == 'Stitch':
+	elif arguments.method == 'Stitch':
 
-		frame_Stitch = cv.imread(args.operand)
+		frame_Stitch = cv.imread(arguments.operand)
 
 		if frame_Stitch is None:
 
-			throwError(1, 'Unable to find / open ' + args.operand)
+			throwError(1, 'Unable to find / open ' + arguments.operand)
 
 		if direction is 'H':
 
@@ -452,61 +451,41 @@ def processFrame(args):
 
 				throwError(1, 'Inappropriate frame dimension')
 
-		cv.imwrite(args.frameOut + args.method + direction + '.png', frameOut)
+		cv.imwrite(arguments.frameOut + arguments.method + direction + '.png', frameOut)
 
-	elif args.method in ['Rotate', 'Shear', 'Stretch']:
+	elif arguments.method in ['Rotate', 'Shear', 'Stretch']:
 
-		cv.imwrite(args.frameOut + args.method + '.png', doAffine(frame, args.method, scale, angle))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, scale, angle))
 
-	elif args.method in ['Binarize', 'Canny']:
+	elif arguments.method in ['Binarize', 'Canny']:
 
 		for x in range(0, 3):
 
-			cv.imwrite(args.frameOut + args.method + str(x) + '.png', doSegment(args.method, frame_Channels[x], override, threshold, sigma))
+			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', doSegment(arguments.method, frame_Channels[x], override, threshold, sigma))
 
-		cv.imwrite(args.frameOut + args.method + 'X.png', doSegment(args.method, frame_Greyscale, override, threshold, sigma))
+		cv.imwrite(arguments.frameOut + arguments.method + 'X.png', doSegment(arguments.method, frame_Greyscale, override, threshold, sigma))
 
-	elif args.method == 'Palette':
+	elif arguments.method == 'Palette':
 
-		if (args.palette == '?'):
+		if (arguments.palette == '?'):
 
 			for name, number in palettes.items():
 
 				print name
 
-		elif (args.palette == '*'):
+		elif (arguments.palette == '*'):
 
 			for name, number in palettes.items():
 
-				cv.imwrite(args.frameOut + args.method + name + '.png', cv.applyColorMap(frame_Greyscale, number))
+				cv.imwrite(arguments.frameOut + arguments.method + name + '.png', cv.applyColorMap(frame_Greyscale, number))
 
 		else:
 
-			cv.imwrite(args.frameOut + args.method + args.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[args.palette]))
+			cv.imwrite(arguments.frameOut + arguments.method + arguments.palette + '.png', cv.applyColorMap(frame_Greyscale, palettes[arguments.palette]))
 
 	else:
 
 		throwError(1, 'Unknown method')
-
-if __name__ == '__main__':
-
-	parser = argparse.ArgumentParser(description='')
-
-	parser.add_argument('frameIn', help='<frameIn>')
-	parser.add_argument('frameOut', help='<frameOut>')
-	parser.add_argument('method', help='<method>')
-	parser.add_argument('-angle', help='<angle>')
-	parser.add_argument('-direction', help='<direction>')
-	parser.add_argument('-dump', help='<dump>')
-	parser.add_argument('-operand', help='<operand>')
-	parser.add_argument('-palette', help='<palette>')
-	parser.add_argument('-scale', help='<scale>')
-	parser.add_argument('-sigma', help='<sigma>')
-	parser.add_argument('-threshold', help='<threshold>')
-
-	args = parser.parse_args()
-
-	processFrame(args)
 
 # Add Blend
 
