@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import glob
 import math
 import re
 import scipy.ndimage
@@ -136,6 +137,23 @@ def enlarge(frame_Channels, scale):
 		frame_Channels[x] = scipy.ndimage.zoom(frame_Channels[x], scale, order=3)
 
 	return cv.merge(frame_Channels)
+
+def getLUT(fileName):
+
+	paletteLUT = np.zeros((256, 1, 3), dtype=np.uint8)
+
+	paletteFileHandle = open(fileName, 'r')
+
+	position = 0
+	for entry in paletteFileHandle.readlines():
+		intensitites = entry.strip('\n').split(' ')
+		for channels in range(0, 3):
+			paletteLUT[position, 0, channels] = intensitites[2 - channels]
+		position += 1
+
+	paletteFileHandle.close()
+
+	return paletteLUT
 
 def processFrame(arguments):
 
@@ -483,20 +501,17 @@ def processFrame(arguments):
 
 		elif (len(arguments.palette.split('.plt')) == 2):
 
-			paletteLUT = np.zeros((256, 1, 3), dtype=np.uint8)
+			paletteName = arguments.palette.strip('.plt')
 
-			paletteFileHandle = open(arguments.palette, 'r')
+			if (paletteName == '*'):
 
-			position = 0
-			for entry in paletteFileHandle.readlines():
-				intensitites = entry.strip('\n').split(' ')
-				for channels in range(0, 3):
-					paletteLUT[position, 0, channels] = intensitites[2 - channels]
-				position += 1
+				for paletteFileName in glob.glob('*.plt'):
 
-			paletteFileHandle.close()
+					cv.imwrite(arguments.frameOut + arguments.method + paletteFileName.strip('.plt') + '.png', cv.LUT(frame, getLUT(paletteFileName)))
 
-			cv.imwrite(arguments.frameOut + arguments.method + arguments.palette.strip('.plt') + '.png', cv.LUT(frame, paletteLUT))
+			else:
+
+				cv.imwrite(arguments.frameOut + arguments.method + paletteName + '.png', cv.LUT(frame, getLUT(arguments.palette)))
 
 		elif (arguments.palette not in palettes):
 
