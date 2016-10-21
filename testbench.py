@@ -239,11 +239,11 @@ def processFrame(arguments):
 
 # Argument Handling: Palette
 
-	if (arguments.palette == None) & (arguments.method == 'Palette'):
+	if (arguments.palette == None) & (arguments.method == 'Colorize'):
 
 		throwError(3, arguments.method + ' requires a choice of palette')
 
-	elif (arguments.palette != None) & (arguments.method != 'Palette'):
+	elif (arguments.palette != None) & (arguments.method != 'Colorize'):
 
 		throwError(2, arguments.method + ' cannot have a choice of palette')
 
@@ -485,7 +485,7 @@ def processFrame(arguments):
 
 		cv.imwrite(arguments.frameOut + arguments.method + 'X.png', doSegment(arguments.method, frame_Greyscale, override, threshold, sigma))
 
-	elif arguments.method == 'Palette':
+	elif arguments.method == 'Colorize':
 
 		if (arguments.palette == '?'):
 
