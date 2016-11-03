@@ -185,6 +185,40 @@ def processFrame(arguments):
 
 		angle = 2
 
+# Argument Handling: Colour
+
+	if (arguments.colour != None) & (arguments.method in ['AddText']):
+
+		try:
+
+			colour = [int(i) for i in arguments.colour.split(',')]
+
+			if (len(colour) != 3):
+
+				throwError(1, 'Unable to parse')
+
+			if (colour[0] < 0) | (colour[1] < 0) | (colour[2] < 0):
+
+				throwError(1, 'Value out of domain')
+
+			if (colour[0] > 255) | (colour[1] > 255) | (colour[2] > 255):
+
+				throwError(1, 'Value out of domain')
+
+			colour = tuple(colour)
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif (arguments.colour != None):
+
+		throwError(2, arguments.method + ' cannot have a colour')
+
+	else:
+
+		colour = (255, 255, 255)
+
 # Argument Handling: Direction
 
 	if (arguments.direction != None) & (arguments.method == 'Flip'):
@@ -229,11 +263,11 @@ def processFrame(arguments):
 
 # Argument Handling: Operand
 
-	if (arguments.operand == None) & (arguments.method == 'Stitch'):
+	if (arguments.operand == None) & (arguments.method in ['Stitch', 'AddText']):
 
 		throwError(3, arguments.method + ' requires another operand')
 
-	if (arguments.operand != None) & (arguments.method != 'Stitch'):
+	if (arguments.operand != None) & (arguments.method not in ['Stitch', 'AddText']):
 
 		throwError(2, arguments.method + ' cannot have another operand')
 
@@ -320,6 +354,64 @@ def processFrame(arguments):
 	else:
 
 		sigma = 0.33
+
+# Argument Handling: Start
+
+	if (arguments.start != None) & (arguments.method in ['AddText']):
+
+		try:
+
+			start = [int(i) for i in arguments.start.split(',')]
+
+			if (len(start) != 2):
+
+				throwError(1, 'Unable to parse')
+
+			if (start[0] < 0) | (start[1] < 0):
+
+				throwError(1, 'Value out of domain')
+
+			start = tuple(start)
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif (arguments.start != None):
+
+		throwError(2, arguments.method + ' cannot have a starting co-ordinate')
+
+	else:
+
+		start = (0, 0)
+
+# Argument Handling: Thickness
+
+	if (arguments.thickness != None) & (arguments.thickness in ['AddText']):
+
+		try:
+
+			thickness = int(arguments.thickness)
+
+			if thickness < 1:
+
+				throwError(1, 'Value out of domain')
+
+			if angle > 4:
+
+				throwError(1, 'Value out of domain')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif (arguments.thickness != None):
+
+		throwError(2, arguments.thickness + ' cannot have a thickness')
+
+	else:
+
+		thickness = 2
 
 # Argument Handling: Threshold
 
@@ -476,6 +568,10 @@ def processFrame(arguments):
 	elif arguments.method in ['Rotate', 'Shear', 'Stretch']:
 
 		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, scale, angle))
+
+	elif arguments.method == 'AddText':
+
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', cv.putText(frame.copy(), arguments.operand, start, cv.FONT_HERSHEY_SIMPLEX, 1, colour, thickness, cv.LINE_AA))
 
 	elif arguments.method in ['Binarize', 'Canny']:
 
