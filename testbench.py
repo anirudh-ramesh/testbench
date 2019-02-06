@@ -78,7 +78,7 @@ def doSegment(method, frame, override, threshold, sigma):
 		if override is True:
 			_, binary = cv.threshold(frame, threshold, 255, 0)
 		else:
-			_,binary = cv.threshold(frame, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
+			_, binary = cv.threshold(frame, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
 		return binary
 
 	else:
@@ -130,6 +130,15 @@ def swapChannels(frame_Channels, index0, index1):
 
 	return cv.merge(frame_Channels)
 
+def dropChannels(frame_Channels, index):
+
+	height, width = frame_Channels[0].shape
+
+	frame_Channels_copy = list(frame_Channels)
+	frame_Channels_copy[index] = np.ones([height, width], np.uint8) * 128
+
+	return cv.merge(frame_Channels_copy)
+
 def enlarge(frame_Channels, scale):
 
 	for x in range(0, 3):
@@ -137,6 +146,12 @@ def enlarge(frame_Channels, scale):
 		frame_Channels[x] = scipy.ndimage.zoom(frame_Channels[x], scale, order=3)
 
 	return cv.merge(frame_Channels)
+
+def trim(frame):
+
+	pixels = np.array(np.where(frame != 255))
+
+	return frame[pixels[0, 0]:pixels[0, -1], min(pixels[1, :]):max(pixels[1, :])]
 
 def getLUT(fileName):
 
@@ -235,7 +250,7 @@ def processFrame(arguments):
 
 			throwError(1, 'Unable to parse')
 
-	if (arguments.direction != None) & (arguments.method == 'Stitch'):
+	elif (arguments.direction != None) & (arguments.method == 'Stitch'):
 
 		try:
 
@@ -385,6 +400,34 @@ def processFrame(arguments):
 
 		start = (0, 0)
 
+# Argument Handling: Dimensions
+
+	if (arguments.dimension != None) & (arguments.method == 'Crop'):
+
+		try:
+
+			dimension = [int(i) for i in arguments.dimension.split('x')]
+
+			if (len(dimension) != 4):
+
+				throwError(1, 'Unable to parse')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif arguments.dimension:
+
+		throwError(2, arguments.method + ' cannot have a dimension')
+
+	elif (arguments.dimension == None) & (arguments.method == 'Crop'):
+
+		throwError(2, arguments.method + ' must have a dimension')
+
+	else:
+
+		dimension = -1
+
 # Argument Handling: Thickness
 
 	if (arguments.thickness != None) & (arguments.thickness in ['AddText']):
@@ -473,6 +516,8 @@ def processFrame(arguments):
 
 		throwError(1, 'Unable to find / open ' + arguments.frameIn)
 
+	height, width, _ = frame.shape
+
 	frame_Channels = cv.split(frame)
 	frame_Greyscale = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
@@ -513,17 +558,41 @@ def processFrame(arguments):
 
 		pass
 
+	elif arguments.method == 'Crop':
+
+		if (dimension[0] < 0) | (dimension[0] > width):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[1] < 0) | (dimension[1] > height):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[2] < 0) | (dimension[2] > width - dimension[0]):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[3] < 0) | (dimension[3] > height - dimension[1]):
+
+			throwError(1, 'Value out of domain')
+
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', frame[dimension[1]:dimension[1] + dimension[3], dimension[0]:dimension[0] + dimension[2]])
+
 	elif arguments.method == 'Histogram':
 
 		cv.imwrite(arguments.frameOut + arguments.method + '.png', saveHistogram(frame_Channels, frame_Greyscale))
 
 	elif arguments.method == 'Enlarge':
 
-		cv.imwrite(arguments.frameOut + arguments.method + '.png', enlarge(frame_Channels, scale))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', enlarge(frame_Channels, scale - 1))
 
 	elif arguments.method == 'Negate':
 
 		cv.imwrite(arguments.frameOut + arguments.method + '.png', cv.bitwise_not(frame))
+
+	elif arguments.method == 'Trim':
+
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', trim(frame))
 
 	elif arguments.method == 'Flip':
 
@@ -534,6 +603,12 @@ def processFrame(arguments):
 		for x in range(0, 3):
 
 			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', swapChannels(frame_Channels, x, (x + 1) % 3))
+
+	elif arguments.method == 'ChannelDrop':
+
+		for x in range(0, 3):
+
+			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', dropChannels(frame_Channels, x))
 
 	elif arguments.method == 'Stitch':
 
@@ -567,7 +642,7 @@ def processFrame(arguments):
 
 	elif arguments.method in ['Rotate', 'Shear', 'Stretch']:
 
-		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, scale, angle))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, 1.5, angle))
 
 	elif arguments.method == 'AddText':
 

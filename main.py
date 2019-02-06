@@ -20,6 +20,7 @@ if __name__ == '__main__':
 	parser.add_argument('-start', help='<start>')
 	parser.add_argument('-thickness', help='<thickness>')
 	parser.add_argument('-threshold', help='<threshold>')
+	parser.add_argument('-dimension', help='<dimension>')
 
 	args = parser.parse_args()
 
