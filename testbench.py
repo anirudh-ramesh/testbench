@@ -321,6 +321,34 @@ def processFrame(arguments):
 
 		sigma = 0.33
 
+# Argument Handling: Dimensions
+
+	if (arguments.dimension != None) & (arguments.method == 'Crop'):
+
+		try:
+
+			dimension = [int(i) for i in arguments.dimension.split('x')]
+
+			if (len(dimension) != 4):
+
+				throwError(1, 'Unable to parse')
+
+		except ValueError:
+
+			throwError(1, 'Unable to parse')
+
+	elif arguments.dimension:
+
+		throwError(2, arguments.method + ' cannot have a dimension')
+
+	elif (arguments.dimension == None) & (arguments.method == 'Crop'):
+
+		throwError(2, arguments.method + ' must have a dimension')
+
+	else:
+
+		dimension = -1
+
 # Argument Handling: Threshold
 
 	if (arguments.threshold != None) & (arguments.method == 'Canny'):
@@ -381,6 +409,8 @@ def processFrame(arguments):
 
 		throwError(1, 'Unable to find / open ' + arguments.frameIn)
 
+	height, width, _ = frame.shape
+
 	frame_Channels = cv.split(frame)
 	frame_Greyscale = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
@@ -420,6 +450,26 @@ def processFrame(arguments):
 	if arguments.method == 'None':
 
 		pass
+
+	elif arguments.method == 'Crop':
+
+		if (dimension[0] < 0) | (dimension[0] > width):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[1] < 0) | (dimension[1] > height):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[2] < 0) | (dimension[2] > width - dimension[0]):
+
+			throwError(1, 'Value out of domain')
+
+		elif (dimension[3] < 0) | (dimension[3] > height - dimension[1]):
+
+			throwError(1, 'Value out of domain')
+
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', frame[dimension[1]:dimension[1] + dimension[3], dimension[0]:dimension[0] + dimension[2]])
 
 	elif arguments.method == 'Histogram':
 

@@ -17,6 +17,7 @@ if __name__ == '__main__':
 	parser.add_argument('-sigma', help='<sigma>')
 	parser.add_argument('-search', help='<search>')
 	parser.add_argument('-threshold', help='<threshold>')
+	parser.add_argument('-dimension', help='<dimension>')
 
 	args = parser.parse_args()
 
