@@ -78,7 +78,7 @@ def doSegment(method, frame, override, threshold, sigma):
 		if override is True:
 			_, binary = cv.threshold(frame, threshold, 255, 0)
 		else:
-			_,binary = cv.threshold(frame, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
+			_, binary = cv.threshold(frame, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
 		return binary
 
 	else:
