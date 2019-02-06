@@ -130,6 +130,15 @@ def swapChannels(frame_Channels, index0, index1):
 
 	return cv.merge(frame_Channels)
 
+def dropChannels(frame_Channels, index):
+
+	height, width = frame_Channels[0].shape
+
+	frame_Channels_copy = list(frame_Channels)
+	frame_Channels_copy[index] = np.ones([height, width], np.uint8) * 128
+
+	return cv.merge(frame_Channels_copy)
+
 def enlarge(frame_Channels, scale):
 
 	for x in range(0, 3):
@@ -492,6 +501,12 @@ def processFrame(arguments):
 		for x in range(0, 3):
 
 			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', swapChannels(frame_Channels, x, (x + 1) % 3))
+
+	elif arguments.method == 'ChannelDrop':
+
+		for x in range(0, 3):
+
+			cv.imwrite(arguments.frameOut + arguments.method + str(x) + '.png', dropChannels(frame_Channels, x))
 
 	elif arguments.method == 'Stitch':
 
