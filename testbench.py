@@ -492,7 +492,7 @@ def processFrame(arguments):
 
 	elif arguments.method == 'Enlarge':
 
-		cv.imwrite(arguments.frameOut + arguments.method + '.png', enlarge(frame_Channels, scale))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', enlarge(frame_Channels, scale - 1))
 
 	elif arguments.method == 'Negate':
 
@@ -550,7 +550,7 @@ def processFrame(arguments):
 
 	elif arguments.method in ['Rotate', 'Shear', 'Stretch']:
 
-		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, scale, angle))
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', doAffine(frame, arguments.method, 1.5, angle))
 
 	elif arguments.method in ['Binarize', 'Canny']:
 
