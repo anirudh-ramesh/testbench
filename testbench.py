@@ -216,7 +216,7 @@ def processFrame(arguments):
 
 			throwError(1, 'Unable to parse')
 
-	if (arguments.direction != None) & (arguments.method == 'Stitch'):
+	elif (arguments.direction != None) & (arguments.method == 'Stitch'):
 
 		try:
 
