@@ -147,6 +147,12 @@ def enlarge(frame_Channels, scale):
 
 	return cv.merge(frame_Channels)
 
+def trim(frame):
+
+	pixels = np.array(np.where(frame != 255))
+
+	return frame[pixels[0, 0]:pixels[0, -1], min(pixels[1, :]):max(pixels[1, :])]
+
 def getLUT(fileName):
 
 	paletteLUT = np.zeros((256, 1, 3), dtype=np.uint8)
@@ -491,6 +497,10 @@ def processFrame(arguments):
 	elif arguments.method == 'Negate':
 
 		cv.imwrite(arguments.frameOut + arguments.method + '.png', cv.bitwise_not(frame))
+
+	elif arguments.method == 'Trim':
+
+		cv.imwrite(arguments.frameOut + arguments.method + '.png', trim(frame))
 
 	elif arguments.method == 'Flip':
 
