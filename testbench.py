@@ -562,19 +562,22 @@ def processFrame(arguments):
 
 		if (dimension[0] < 0) | (dimension[0] > width):
 
-			throwError(1, 'Value out of domain')
+			throwError(1, 'Start width out of domain')
 
 		elif (dimension[1] < 0) | (dimension[1] > height):
 
-			throwError(1, 'Value out of domain')
+			throwError(1, 'Start height out of domain')
 
 		elif (dimension[2] < 0) | (dimension[2] > width - dimension[0]):
 
-			throwError(1, 'Value out of domain')
+			throwError(1, 'End width out of domain')
 
 		elif (dimension[3] < 0) | (dimension[3] > height - dimension[1]):
 
-			throwError(1, 'Value out of domain')
+			print height
+			print dimension[1]
+			print dimension[3]
+			throwError(1, 'End height out of domain')
 
 		cv.imwrite(arguments.frameOut + arguments.method + '.png', frame[dimension[1]:dimension[1] + dimension[3], dimension[0]:dimension[0] + dimension[2]])
 
